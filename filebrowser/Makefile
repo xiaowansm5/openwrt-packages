@@ -1,25 +1,25 @@
 # SPDX-License-Identifier: GPL-3.0-only
 #
-# Copyright (C) 2021 ImmortalWrt.org
+# Copyright (C) 2024 op.dllkids.xyz
 
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=filebrowser
-PKG_VERSION:=2.25.0
-PKG_RELEASE:=$(AUTORELEASE)
+PKG_VERSION:=2.28.0
+PKG_RELEASE:=1
 
-PKG_SOURCE_PROTO:=git
-PKG_SOURCE_VERSION:=02db83c72ef3e14bac8df085a49f873261c6fb69
-PKG_SOURCE_URL:=https://github.com/filebrowser/filebrowser
-PKG_HASH:=e6d83a869454a1b90768917809f76673acc9752999faf2d6ba50766d7d8a7d38
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
+PKG_SOURCE_URL:=https://codeload.github.com/filebrowser/filebrowser/tar.gz/v${PKG_VERSION}?
+PKG_HASH:=5e8c5b57783976f454ee7f23df9c36b9566648b7b443287a7f2089771628695d
 
 PKG_LICENSE:=Apache-2.0
 PKG_LICENSE_FILES:=LICENSE
-PKG_MAINTAINER:=CN_SZTL <cnsztl@immortalwrt.org>
+PKG_MAINTAINER:=kenzo <kenzok8@gmail.com>
 
 PKG_BUILD_DEPENDS:=golang/host node/host
 PKG_BUILD_PARALLEL:=1
 PKG_USE_MIPS16:=0
+PKG_BUILD_FLAGS:=no-mips16
 
 GO_PKG:=github.com/filebrowser/filebrowser
 GO_PKG_LDFLAGS_X:= \

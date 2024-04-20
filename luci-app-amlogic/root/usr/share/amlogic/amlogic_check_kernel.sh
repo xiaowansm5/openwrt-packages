@@ -51,7 +51,12 @@ fi
 
 # Find the partition where root is located
 ROOT_PTNAME="$(df / | tail -n1 | awk '{print $1}' | awk -F '/' '{print $3}')"
-[[ -n "${ROOT_PTNAME}" ]] || tolog "Cannot find the partition corresponding to the root file system!" "1"
+if [[ -z "${ROOT_PTNAME}" ]]; then
+    ROOT_PTNAME="$(df /overlay | tail -n1 | awk '{print $1}' | awk -F '/' '{print $3}')"
+    if [[ -z "${ROOT_PTNAME}" ]]; then
+        tolog "Cannot find the partition corresponding to the root file system!" "1"
+    fi
+fi
 
 # Find the disk where the partition is located, only supports mmcblk?p? sd?? hd?? vd?? and other formats
 case "${ROOT_PTNAME}" in
@@ -105,13 +110,23 @@ fi
 
 # Convert kernel repo to api format
 [[ "${kernel_repo}" =~ ^https: ]] && kernel_repo="$(echo ${kernel_repo} | awk -F'/' '{print $4"/"$5}')"
-kernel_api="https://api.github.com/repos/${kernel_repo}"
+kernel_api="https://github.com/${kernel_repo}"
 if [[ -n "${KERNEL_TAGS}" ]]; then
     kernel_tag="${KERNEL_TAGS}"
 else
-    [[ "${SOC}" == "rk3588" ]] && kernel_tag="rk3588" || kernel_tag="stable"
+    if [[ "${SOC}" == "rk3588" ]]; then
+        kernel_tag="rk3588"
+    elif [[ "${SOC}" == "rk3528" ]]; then
+        kernel_tag="rk35xx"
+    else
+        kernel_tag="stable"
+    fi
 fi
+
+# Remove the kernel_ prefix
 kernel_tag="${kernel_tag/kernel_/}"
+# If the kernel tag is a number, it is converted to a stable branch
+[[ "${kernel_tag}" =~ ^[1-9]+ ]] && kernel_tag="stable"
 
 # Step 2: Check if there is the latest kernel version
 check_kernel() {
@@ -142,12 +157,10 @@ check_kernel() {
 
     # Check the version on the server
     latest_version="$(
-        curl -s \
-            -H "Accept: application/vnd.github+json" \
-            ${kernel_api}/releases/tags/kernel_${kernel_tag} |
-            jq -r '.assets[].name' |
-            grep -oE "${main_line_version}\.[0-9]+" |
-            sort -rV | head -n 1
+        curl -fsSL -m 10 \
+            ${kernel_api}/releases/expanded_assets/kernel_${kernel_tag} |
+            grep -oE "${main_line_version}.[0-9]+.tar.gz" | sed 's/.tar.gz//' |
+            sort -urV | head -n 1
     )"
     [[ -n "${latest_version}" ]] || tolog "02.03 No kernel available, please use another kernel branch." "1"
 
@@ -180,7 +193,8 @@ download_kernel() {
     rm -rf ${KERNEL_DOWNLOAD_PATH}/${download_version}*
 
     kernel_down_from="https://github.com/${kernel_repo}/releases/download/kernel_${kernel_tag}/${download_version}.tar.gz"
-    wget "${kernel_down_from}" -q -P "${KERNEL_DOWNLOAD_PATH}"
+
+    curl -fsSL "${kernel_down_from}" -o ${KERNEL_DOWNLOAD_PATH}/${download_version}.tar.gz
     [[ "${?}" -ne "0" ]] && tolog "03.03 The kernel download failed." "1"
 
     tar -xf ${KERNEL_DOWNLOAD_PATH}/${download_version}.tar.gz -C ${KERNEL_DOWNLOAD_PATH}

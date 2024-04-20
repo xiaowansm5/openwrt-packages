@@ -65,6 +65,9 @@ fi
 
 # Find the device name of /
 root_devname=$(df / | tail -n1 | awk '{print $1}' | awk -F '\/' '{print substr($3, 1, length($3)-2)}')
+if [[ -z "${root_devname}" ]]; then
+    root_devname="$(df /overlay | tail -n1 | awk '{print $1}' | awk -F '\/' '{print substr($3, 1, length($3)-2)}')"
+fi
 if lsblk -l | grep -E "^${root_devname}boot0" >/dev/null; then
     echo "you are running in emmc mode, please boot system with usb or tf card!"
     exit 1
@@ -261,7 +264,13 @@ done
 # you can change ROOT size(MB) >= 320
 ROOT1="960"
 ROOT2="960"
-if [[ "${AMLOGIC_SOC}" == "s912" || "${AMLOGIC_SOC}" == "s905d" ]]; then
+if [[ "${AMLOGIC_SOC}" == "s912" ]] && [[ "${boxtype}" == "213" || "${boxtype}" == "2e" ]]; then
+    BOOT="512"
+    BLANK1="700"
+    BLANK2="220"
+    BLANK3="0"
+    BLANK4="0"
+elif [[ "${AMLOGIC_SOC}" == "s912" || "${AMLOGIC_SOC}" == "s905d" ]]; then
     BOOT="512"
     BLANK1="68"
     BLANK2="220"
